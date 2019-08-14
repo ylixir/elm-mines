@@ -1,6 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs;
 stdenv.mkDerivation {
-  name = "#project#";
+  name = "elm-mines";
   buildInputs = import ./default.nix;
 }

@@ -1,5 +1,5 @@
 {
-  "name": "#project#",
+  "name": "elm-mines",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
@@ -14,9 +14,9 @@
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ylixir/#project#/issues"
+    "url": "https://github.com/ylixir/elm-mines/issues"
   },
-  "homepage": "https://github.com/ylixir/#project##readme",
+  "homepage": "https://github.com/ylixir/elm-mines#readme",
   "devDependencies": {
     "elm": "^0.19.0-no-deps"
   }
