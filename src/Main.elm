@@ -17,13 +17,6 @@ main =
 
 -- MODEL
 
-type alias Game =
-  { seed: Int
-  , width: Int
-  , height: Int
-  , bombs: Int
-  }
-
 bombBoard: Int -> Seed -> Board -> Board
 bombBoard bombs seed board =
   let
@@ -36,7 +29,26 @@ bombBoard bombs seed board =
       (_, Bomb) -> bombBoard bombs nextSeed board
       (_, _) -> bombBoard (bombs - 1) nextSeed (Board.bomb x y board)
 
-newBoard: Game -> Board
+flagBombCount: (Array Square) -> (Int,Int)
+flagBombCount a =
+  let
+    counter: Square -> (Int, Int) -> (Int, Int)
+    counter s (f,b) =
+      case s of
+        (Flagged,Bomb)-> (f+1,b+1)
+        (_,Bomb) -> (f,b+1)
+        (Flagged,_) -> (f+1,b)
+        (_,_) -> (f,b)
+  in Array.foldl counter (0,0) a
+
+type alias Settings =
+  { seed: Int
+  , width: Int
+  , height: Int
+  , bombs: Int
+  }
+
+newBoard: Settings -> Board
 newBoard g =
   let
     empty = Board.empty g.width g.height
@@ -44,7 +56,7 @@ newBoard g =
     bombBoard g.bombs (initialSeed g.seed) empty
 
 type alias Model =
-  { game: Game
+  { settings: Settings
   , board: Board
   , finished: Bool
   }
@@ -59,7 +71,7 @@ init =
       , bombs = 3
       }
   in
-  { game = g
+  { settings = g
   , board = newBoard g
   , finished = False
   }
@@ -69,22 +81,36 @@ init =
 
 type Msg
   = Lose Int Int
+  | Reset
   | Sweep Int Int
   | Toggle Int Int
-  | Reset
-  | SeedChange String
+  | Change SettingsMsg
+
+type SettingsMsg
+  = Bombs String
+  | Height String
+  | Seed String
+  | Width String
 
 update : Msg -> Model -> Model
 update msg m =
-  let g = m.game in
+  let g = m.settings in
   case (m.finished, msg) of
-    (_,SeedChange s) -> { m | game = { g | seed = Maybe.withDefault 0 <| String.toInt s }}
-    (_,Reset) -> { m | board = newBoard m.game, finished = False }
+    (_,Change s) -> { m | settings = updateSettings s m.settings } 
+    (_,Reset) -> { m | board = newBoard m.settings, finished = False }
     (True,_) -> m
     (_,Sweep x y) -> { m | board = Board.sweep x y m.board }
     (_,Lose x y) -> { m | finished=True, board = Board.sweep x y m.board }
     (_,Toggle x y) -> { m | board = Board.toggle x y m.board }
 
+updateSettings: SettingsMsg -> Settings -> Settings
+updateSettings msg settings =
+  let z t = Maybe.withDefault 0 <| String.toInt t
+  in case msg of
+    Bombs t ->  { settings | bombs = z t }
+    Height t ->  { settings | height = z t }
+    Seed t ->  { settings | seed = z t }
+    Width t ->  { settings | width = z t }
 
 -- EVENTS
 onRightClick: msg -> Attribute msg
@@ -97,15 +123,18 @@ view : Model -> Html Msg
 view model =
   let (flags,bombs) = flagBombCount model.board.squares
   in div []
-    [ viewSettings model.game
+    [ Html.map Change (viewSettings model.settings)
     , button [ onClick Reset ] [ text <| (String.fromInt flags)++"/"++(String.fromInt bombs) ]
     , viewBoard model.board
     ]
 
-viewSettings: Game -> Html Msg
+viewSettings: Settings -> Html SettingsMsg
 viewSettings g =
   div []
-    [ div [] [text "seed", input [value (String.fromInt g.seed), onInput SeedChange, type_ "number"][]]
+    [ div [] [text "bombs", input [value (String.fromInt g.bombs), onInput Bombs, type_ "number"][]]
+    , div [] [text "height", input [value (String.fromInt g.height), onInput Height, type_ "number"][]]
+    , div [] [text "seed", input [value (String.fromInt g.seed), onInput Seed, type_ "number"][]]
+    , div [] [text "width", input [value (String.fromInt g.width), onInput Width, type_ "number"][]]
     ]
 viewBoard: Board -> Html Msg
 viewBoard b =
@@ -129,18 +158,6 @@ viewSquare b y x =
     (Exposed,Neighbor 0) -> swept [] []
     (Exposed,Neighbor n) -> swept [] [text <| String.fromInt n]
     (Exposed,Bomb) -> lost [] [text "B"]
-
-flagBombCount: (Array Square) -> (Int,Int)
-flagBombCount a =
-  let
-    counter: Square -> (Int, Int) -> (Int, Int)
-    counter s (f,b) =
-      case s of
-        (Flagged,Bomb)-> (f+1,b+1)
-        (_,Bomb) -> (f,b+1)
-        (Flagged,_) -> (f+1,b)
-        (_,_) -> (f,b)
-  in Array.foldl counter (0,0) a
 
 -- STYLING
 
