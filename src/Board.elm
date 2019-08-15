@@ -28,7 +28,6 @@ type alias Square = (Tile ,Content)
 -- we should do an opaque type here, but i'm just going to keep things simple
 type alias Board =
   { width: Int
-  , height: Int
   , squares: Array Square
   }
 
@@ -55,7 +54,6 @@ bomb x y b =
 empty: Int -> Int -> Board
 empty w h =
   { width = w+2
-  , height = h+2
   , squares = Array.initialize ((w+2)*(h+2)) (\i -> (Plain, Neighbor 0))
   }
 
@@ -76,7 +74,7 @@ sweep x y b =
     n = realIndex x y b
     (_,c) = Maybe.withDefault (Exposed, Bomb) <| Array.get n b.squares
   in
-    { b| squares = Array.set n (Exposed, c) b.squares } 
+    { b| squares = b.squares |> flood b.width n |> Array.set n (Exposed, c) } 
 
 
 toggle: Int -> Int -> Board -> Board
@@ -103,4 +101,31 @@ increment n b = case (Maybe.withDefault (Exposed, Bomb) <| Array.get n b) of
   (t,Bomb) -> b
   (t,Neighbor x) -> Array.set n (t, Neighbor (x+1)) b
 
+edge: Int -> Int -> (Array a) -> Bool
+edge width n b =
+  let
+      left = 0 == (modBy width n)
+      right = (width - 1) == (modBy width n)
+      top = width > n
+      bottom = n + width > (Array.length b)
+  in left || right || top || bottom 
 
+flood: Int -> Int -> (Array Square) -> (Array Square)
+flood width n b =
+  let
+    s = Maybe.withDefault (Exposed, Bomb) <| Array.get n b
+  in
+    if (edge width n b) then
+      b
+    else case s of
+      (Plain,Neighbor 0) ->
+        b
+          |> Array.set n (Exposed, Tuple.second s)
+          |> flood width (n+width)
+          |> flood width (n-width)
+          |> flood width (n+1)
+          |> flood width (n-1)
+      (Plain,Neighbor _) ->
+        Array.set n (Exposed, Tuple.second s) b
+      (_,_) ->
+        b
