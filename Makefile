@@ -12,10 +12,10 @@ package-lock.json: package.json
 	npm install --save-dev
 
 deploy: index.html
-	git stash save
-	git checkout gh-pages
-	git stash pop
+	git branch -D gh-pages||true
+	git checkout --orphan gh-pages
+	git reset
 	git add -f $<
 	git commit -m "deploy"
-	git push
-	git checkout -f master
+	git push --force --set-upstream origin gh-pages
+	get checkout -f master
