@@ -12,8 +12,8 @@ package-lock.json: package.json
 	npm install --save-dev
 
 deploy: index.html
-	git checkout gh-pages
+	git checkout -f gh-pages
 	git add -f $<
 	git commit -m "deploy"
 	git push
-	git checkout master
+	git checkout -f master
