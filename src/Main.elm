@@ -48,6 +48,13 @@ type alias Settings =
   , bombs: Int
   }
 
+beginner: Int -> Settings
+beginner s = { seed = s, width = 9, height = 9, bombs = 10}
+intermediate: Int -> Settings
+intermediate s = { seed = s, width = 16, height = 16, bombs = 40}
+expert: Int -> Settings
+expert s = { seed = s, width = 16, height = 30, bombs = 99}
+
 newBoard: Settings -> Board
 newBoard g =
   let
@@ -64,12 +71,7 @@ type alias Model =
 init : Model
 init =
   let
-    g =
-      { seed = 0
-      , width = 10
-      , height = 10
-      , bombs = 3
-      }
+    g = beginner 0
   in
   { settings = g
   , board = newBoard g
@@ -82,6 +84,7 @@ init =
 type Msg
   = Lose Int Int
   | Reset
+  | Set (Int -> Settings)
   | Sweep Int Int
   | Toggle Int Int
   | Change SettingsMsg
@@ -96,6 +99,7 @@ update : Msg -> Model -> Model
 update msg m =
   let g = m.settings in
   case (m.finished, msg) of
+    (_,Set s) -> { m | settings = s m.settings.seed }
     (_,Change s) -> { m | settings = updateSettings s m.settings } 
     (_,Reset) -> { m | board = newBoard m.settings, finished = False }
     (True,_) -> m
@@ -124,7 +128,12 @@ view model =
   let (flags,bombs) = flagBombCount model.board.squares
   in div []
     [ Html.map Change (viewSettings model.settings)
-    , button [ onClick Reset ] [ text <| (String.fromInt flags)++"/"++(String.fromInt bombs) ]
+    , div []
+      [ button [onClick (Set beginner)] [text "Beginner"]
+      , button [onClick (Set intermediate)] [text "Intermediate"]
+      , button [onClick (Set expert)] [text "Expert"]
+      ]
+    , button [ onClick Reset ] [ text <| (String.fromInt flags)++"/"++(String.fromInt bombs)++" Reset" ]
     , viewBoard model.board
     ]
 
