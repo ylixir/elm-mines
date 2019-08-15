@@ -18,4 +18,4 @@ deploy: index.html
 	git add -f $<
 	git commit -m "deploy"
 	git push --force --set-upstream origin gh-pages
-	get checkout -f master
+	git checkout -f master
