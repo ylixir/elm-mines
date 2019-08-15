@@ -159,7 +159,7 @@ viewSettings g =
     , div []
       [text "seed"
       , input [value (String.fromInt g.seed), onInput Seed, type_ "number"][]
-      , button [onClick TimeRequest][text "Roll"]
+      , button [onClick TimeRequest][text "🎲"]
       ]
     , div [] [text "width", input [value (String.fromInt g.width), onInput Width, type_ "number"][]]
     ]
@@ -181,7 +181,7 @@ viewSquare b y x =
   case Board.square x y b of
     (Plain,Bomb) -> unswept [ onRightClick (Toggle x y), onClick (Lose x y) ] []
     (Plain,_) -> unswept [ onRightClick (Toggle x y), onClick (Sweep x y) ] []
-    (Flagged,_) -> unswept [ onRightClick (Toggle x y) ] [text "!" ]
+    (Flagged,_) -> unswept [ onRightClick (Toggle x y) ] [text "⚐" ]
     (Question,_) -> unswept [ onRightClick (Toggle x y) ] [text "?" ]
     (Exposed,Neighbor 0) -> blank
     (Exposed,Neighbor 1) -> swept "blue" 1
@@ -191,7 +191,7 @@ viewSquare b y x =
     (Exposed,Neighbor 5) -> swept "maroon" 5
     (Exposed,Neighbor 6) -> swept "turquoise" 6
     (Exposed,Neighbor n) -> swept "black" n
-    (Exposed,Bomb) -> lost [] [text "B"]
+    (Exposed,Bomb) -> lost [] [text "💣"]
 
 -- STYLING
 
