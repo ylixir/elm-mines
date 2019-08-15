@@ -108,7 +108,9 @@ update msg m =
     (_,SeedTime t) -> 
       let settings = {g|seed=(posixToMillis t)}
       in ({board=(newBoard settings), finished=False, settings=settings}, Cmd.none)
-    (_,Set s) -> ({ m | settings = s g.seed }, Cmd.none)
+    (_,Set s) ->
+      let settings = s g.seed
+      in ({board=(newBoard settings), finished=False, settings=settings}, Cmd.none)
     (_,Change s) ->
       let (ns,c) = updateSettings s g
       in ({ m | settings = ns } , c)
@@ -181,8 +183,14 @@ viewSquare b y x =
     (Plain,_) -> unswept [ onRightClick (Toggle x y), onClick (Sweep x y) ] []
     (Flagged,_) -> unswept [ onRightClick (Toggle x y) ] [text "!" ]
     (Question,_) -> unswept [ onRightClick (Toggle x y) ] [text "?" ]
-    (Exposed,Neighbor 0) -> swept [] []
-    (Exposed,Neighbor n) -> swept [] [text <| String.fromInt n]
+    (Exposed,Neighbor 0) -> blank
+    (Exposed,Neighbor 1) -> swept "blue" 1
+    (Exposed,Neighbor 2) -> swept "green" 2
+    (Exposed,Neighbor 3) -> swept "red" 3
+    (Exposed,Neighbor 4) -> swept "purple" 4
+    (Exposed,Neighbor 5) -> swept "maroon" 5
+    (Exposed,Neighbor 6) -> swept "turquoise" 6
+    (Exposed,Neighbor n) -> swept "black" n
     (Exposed,Bomb) -> lost [] [text "B"]
 
 -- STYLING
@@ -207,12 +215,21 @@ unswept attrs = base <| attrs++
   , style "border-style" "outset"
   ]
 
-swept: List (Attribute msg) -> List (Html msg) -> Html msg
-swept attrs = base <| attrs++
+blank: Html msg
+blank = base
   [ style "background-color" "lightgray"
   , style "border-style" "solid"
   , style "border-color" "gray"
   ]
+  []
+swept: String -> Int -> Html msg
+swept c n = base
+  [ style "background-color" "lightgray"
+  , style "border-style" "solid"
+  , style "border-color" "gray"
+  , style "color" c
+  ]
+  [text <| String.fromInt n]
 
 lost: List (Attribute msg) -> List (Html msg) -> Html msg
 lost attrs = base <| attrs++
