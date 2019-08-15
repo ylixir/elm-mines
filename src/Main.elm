@@ -4,15 +4,17 @@ import Browser
 import Html exposing (Html, Attribute, button, div, input, span, text)
 import Html.Attributes exposing (style, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Time exposing (Posix, posixToMillis)
 import Random exposing (Seed, initialSeed)
 import Json.Decode as Json
+import Task
 
 --internal modules
 import Board
 import Board exposing (Board, Content(..), Square, Tile(..))
 
 main =
-  Browser.sandbox { init = init, update = update, view = view }
+  Browser.element { init = init, update = update, view = view, subscriptions = (\a->Sub.none) }
 
 
 -- MODEL
@@ -68,15 +70,17 @@ type alias Model =
   , finished: Bool
   }
 
-init : Model
-init =
+init : () -> (Model, Cmd Msg)
+init _ =
   let
     g = beginner 0
   in
-  { settings = g
-  , board = newBoard g
-  , finished = False
-  }
+    ( { settings = g
+      , board = newBoard g
+      , finished = False
+      }
+    , Task.perform SeedTime Time.now
+    )
 
 
 -- UPDATE
@@ -84,6 +88,7 @@ init =
 type Msg
   = Lose Int Int
   | Reset
+  | SeedTime Posix
   | Set (Int -> Settings)
   | Sweep Int Int
   | Toggle Int Int
@@ -93,28 +98,35 @@ type SettingsMsg
   = Bombs String
   | Height String
   | Seed String
+  | TimeRequest
   | Width String
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg m =
   let g = m.settings in
   case (m.finished, msg) of
-    (_,Set s) -> { m | settings = s m.settings.seed }
-    (_,Change s) -> { m | settings = updateSettings s m.settings } 
-    (_,Reset) -> { m | board = newBoard m.settings, finished = False }
-    (True,_) -> m
-    (_,Sweep x y) -> { m | board = Board.sweep x y m.board }
-    (_,Lose x y) -> { m | finished=True, board = Board.sweep x y m.board }
-    (_,Toggle x y) -> { m | board = Board.toggle x y m.board }
+    (_,SeedTime t) -> 
+      let settings = {g|seed=(posixToMillis t)}
+      in ({board=(newBoard settings), finished=False, settings=settings}, Cmd.none)
+    (_,Set s) -> ({ m | settings = s g.seed }, Cmd.none)
+    (_,Change s) ->
+      let (ns,c) = updateSettings s g
+      in ({ m | settings = ns } , c)
+    (_,Reset) -> ({ m | board = newBoard m.settings, finished = False }, Cmd.none)
+    (True,_) -> (m, Cmd.none)
+    (_,Sweep x y) -> ({ m | board = Board.sweep x y m.board }, Cmd.none)
+    (_,Lose x y) -> ({ m | finished=True, board = Board.sweep x y m.board }, Cmd.none)
+    (_,Toggle x y) -> ({ m | board = Board.toggle x y m.board }, Cmd.none)
 
-updateSettings: SettingsMsg -> Settings -> Settings
+updateSettings: SettingsMsg -> Settings -> (Settings, Cmd Msg)
 updateSettings msg settings =
   let z t = Maybe.withDefault 0 <| String.toInt t
   in case msg of
-    Bombs t ->  { settings | bombs = z t }
-    Height t ->  { settings | height = z t }
-    Seed t ->  { settings | seed = z t }
-    Width t ->  { settings | width = z t }
+    Bombs t ->  ({ settings | bombs = z t }, Cmd.none)
+    Height t ->  ({ settings | height = z t }, Cmd.none)
+    Seed t ->  ({ settings | seed = z t }, Cmd.none)
+    Width t ->  ({ settings | width = z t }, Cmd.none)
+    TimeRequest -> (settings, Task.perform SeedTime Time.now)
 
 -- EVENTS
 onRightClick: msg -> Attribute msg
@@ -142,9 +154,14 @@ viewSettings g =
   div []
     [ div [] [text "bombs", input [value (String.fromInt g.bombs), onInput Bombs, type_ "number"][]]
     , div [] [text "height", input [value (String.fromInt g.height), onInput Height, type_ "number"][]]
-    , div [] [text "seed", input [value (String.fromInt g.seed), onInput Seed, type_ "number"][]]
+    , div []
+      [text "seed"
+      , input [value (String.fromInt g.seed), onInput Seed, type_ "number"][]
+      , button [onClick TimeRequest][text "Roll"]
+      ]
     , div [] [text "width", input [value (String.fromInt g.width), onInput Width, type_ "number"][]]
     ]
+
 viewBoard: Board -> Html Msg
 viewBoard b =
   List.range 0 (Board.maxY b)
@@ -192,7 +209,7 @@ unswept attrs = base <| attrs++
 
 swept: List (Attribute msg) -> List (Html msg) -> Html msg
 swept attrs = base <| attrs++
-  [ style "background-color" "gray"
+  [ style "background-color" "lightgray"
   , style "border-style" "solid"
   , style "border-color" "gray"
   ]
