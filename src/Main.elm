@@ -55,7 +55,7 @@ beginner s = { seed = s, width = 9, height = 9, bombs = 10}
 intermediate: Int -> Settings
 intermediate s = { seed = s, width = 16, height = 16, bombs = 40}
 expert: Int -> Settings
-expert s = { seed = s, width = 16, height = 30, bombs = 99}
+expert s = { seed = s, width = 30, height = 16, bombs = 99}
 
 newBoard: Settings -> Board
 newBoard g =
