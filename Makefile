@@ -13,7 +13,7 @@ package-lock.json: package.json
 
 deploy: index.html
 	git checkout gh-pages
-	git add $<
+	git add -f $<
 	git commit -m "deploy"
 	git push
 	git checkout master
