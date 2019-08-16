@@ -171,7 +171,15 @@ update msg m =
             ( { m | settings = ns }, c )
 
         ( _, Reset ) ->
-            ( { m | board = newBoard m.settings, finished = False }, Cmd.none )
+            let
+                invalid =
+                    m.settings.width * m.settings.height < m.settings.bombs
+            in
+            if invalid then
+                ( m, Cmd.none )
+
+            else
+                ( { m | board = newBoard m.settings, finished = False }, Cmd.none )
 
         ( True, _ ) ->
             ( m, Cmd.none )
@@ -190,20 +198,36 @@ updateSettings : SettingsMsg -> Settings -> ( Settings, Cmd Msg )
 updateSettings msg settings =
     let
         z t =
-            Maybe.withDefault 0 <| String.toInt t
+            if "" == t then
+                0
+
+            else
+                Maybe.withDefault -1 <| String.toInt t
     in
     case msg of
         Bombs t ->
-            ( { settings | bombs = z t }, Cmd.none )
+            if z t < 0 then
+                ( settings, Cmd.none )
+
+            else
+                ( { settings | bombs = z t }, Cmd.none )
 
         Height t ->
-            ( { settings | height = z t }, Cmd.none )
+            if z t < 0 then
+                ( settings, Cmd.none )
+
+            else
+                ( { settings | height = z t }, Cmd.none )
 
         Seed t ->
             ( { settings | seed = z t }, Cmd.none )
 
         Width t ->
-            ( { settings | width = z t }, Cmd.none )
+            if z t < 0 then
+                ( settings, Cmd.none )
+
+            else
+                ( { settings | width = z t }, Cmd.none )
 
         TimeRequest ->
             ( settings, Task.perform SeedTime Time.now )
